@@ -38,6 +38,11 @@ code_tokens() { # rough token estimate of source code (chars/4); generated/binar
     -print0 2>/dev/null | xargs -0 cat 2>/dev/null | awk '{c+=length($0)+1} END{printf "%d", c/4}'
 }
 
+changed_since_map() { # freshness: number of code files newer than the map
+  find "$1" -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.py' -o -name '*.php' -o -name '*.go' -o -name '*.rs' -o -name '*.java' -o -name '*.md' \) \
+    -newer "$1/graphify-out/graph.json" -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/graphify-out/*' -not -path '*/.next/*' -not -path '*/dist/*' 2>/dev/null | wc -l | tr -d ' '
+}
+
 cmd_ensure() {
   if command -v graphify >/dev/null 2>&1; then
     say "graphify: $(graphify --version 2>/dev/null | grep -vE '▄|█|▀' | head -1) ($(command -v graphify))"
@@ -108,9 +113,7 @@ print(f"map: {len(n)} nodes · {len(e)} edges · {comms} communities · graph.js
 PY
   local rt ct; rt="$(tokens_of_file "$r")"; ct="$(code_tokens "$root")"
   say "tokens: GRAPH_REPORT.md ≈ $rt · raw source ≈ $ct · query output typically 0.5–4k"
-  # freshness: any code file newer than the map?
-  local newer; newer="$(find "$root" -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.py' -o -name '*.php' -o -name '*.go' -o -name '*.rs' -o -name '*.java' -o -name '*.md' \) \
-    -newer "$g" -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/graphify-out/*' -not -path '*/.next/*' -not -path '*/dist/*' 2>/dev/null | wc -l | tr -d ' ')"
+  local newer; newer="$(changed_since_map "$root")"
   if [ "$newer" -gt 0 ]; then say "freshness: STALE — $newer files changed since the map → 'token.sh update'"; return 4; else say "freshness: up to date"; fi
 }
 
@@ -128,6 +131,12 @@ cmd_build() {
 cmd_query() {
   local q="${1:?question required}"; local root; root="$(root_of "${2:-.}")"
   [ -f "$root/graphify-out/graph.json" ] || die "no map: run 'token.sh build $root' first"
+  # never answer from a stale map: renamed/moved symbols would come back with old locations
+  local newer; newer="$(changed_since_map "$root")"
+  if [ "$newer" -gt 0 ]; then
+    say "[token: map was stale ($newer files changed) → updating before the query]"
+    graphify update "$root" >/dev/null 2>&1 || die "update failed; run 'token.sh build $root'"
+  fi
   local out; out="$(cd "$root" && graphify query "$q" 2>&1)"
   printf '%s\n' "$out"
   printf '%s\n' "$out" | awk '{c+=length($0)+1} END{printf "[tokens: query output ≈ %d]\n", c/4}'

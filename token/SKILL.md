@@ -29,7 +29,7 @@ If a map exists, for a code question run this **before** the first grep/Read:
 - The map covers code only (tree-sitter, 30 languages). Docs/PDFs/images need an LLM; this skill doesn't run one.
 - Some files may yield no symbols (e.g. plain PHP scripts, `vite.config.ts`); the script shows them with a "no symbols" warning. Those need raw reads.
 - Savings depend on the task: large for "where is the flow / what calls this" questions (measured example: 169k → 2.9k tokens); small for a one-file fix.
-- The map goes stale when code changes; without `update`, queries return old information.
+- The map goes stale when code changes. `query` checks freshness first and runs `update` automatically if any code file is newer than the map (it prints a `map was stale` line), so renamed/moved symbols don't come back with old locations. Plain `graphify query` (without token.sh) does NOT do this check.
 
 ## Another machine
 The skill folder is self-contained: copy `~/.claude/skills/token/`, run `bash ~/.claude/skills/token/scripts/install.sh` (or just `/token`). `ensure` installs graphify: `uv` first, then `pipx`, then `python3 -m venv ~/.local/share/token-skill/venv` (PEP 668 Homebrew/Debian Python rejects `pip --user`; a venv works everywhere). Measured: 93 s on a clean environment with only python3. Requirements: Python 3.10+ and internet. The block in the project's `CLAUDE.md` travels with the project; `graphify-out/` is rebuilt with `build` in seconds on each machine, no syncing needed. Windows: the script needs bash (Git Bash/WSL); native PowerShell is not supported.
