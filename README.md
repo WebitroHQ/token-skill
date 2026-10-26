@@ -101,6 +101,10 @@ Then remove the `# >>> token-skill` block from any project `CLAUDE.md` and delet
 
 The map itself is [graphify](https://github.com/Graphify-Labs/graphify) (Apache-2.0). This repo is a thin, deterministic wrapper around it for Claude Code, made by [Webitro](https://github.com/WebitroHQ).
 
+## Made by Webitro
+
+[Webitro](https://webitro.com) is a custom software studio. We build AI agents, chatbots, automation and e-commerce systems, and we design custom skills and command sets for teams using Claude Code. If you want a skill tailored to your own workflow, [get in touch](https://webitro.com).
+
 ## License
 
 [MIT](LICENSE)
