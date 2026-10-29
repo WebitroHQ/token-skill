@@ -39,8 +39,12 @@ code_tokens() { # rough token estimate of source code (chars/4); generated/binar
 }
 
 changed_since_map() { # freshness: number of code files newer than the map
-  find "$1" -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.py' -o -name '*.php' -o -name '*.go' -o -name '*.rs' -o -name '*.java' -o -name '*.md' \) \
-    -newer "$1/graphify-out/graph.json" -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/graphify-out/*' -not -path '*/.next/*' -not -path '*/dist/*' 2>/dev/null | wc -l | tr -d ' '
+  find "$1" -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.jsx' -o -name '*.mjs' -o -name '*.cjs' \
+    -o -name '*.py' -o -name '*.php' -o -name '*.go' -o -name '*.rs' -o -name '*.java' -o -name '*.kt' -o -name '*.kts' \
+    -o -name '*.swift' -o -name '*.scala' -o -name '*.dart' -o -name '*.rb' -o -name '*.lua' -o -name '*.c' -o -name '*.cc' \
+    -o -name '*.cpp' -o -name '*.h' -o -name '*.hpp' -o -name '*.cs' -o -name '*.vue' -o -name '*.svelte' -o -name '*.md' \) \
+    -newer "$1/graphify-out/graph.json" -not -path '*/node_modules/*' -not -path '*/.git/*' -not -path '*/graphify-out/*' \
+    -not -path '*/.next/*' -not -path '*/dist/*' -not -path '*/build/*' -not -path '*/.gradle/*' 2>/dev/null | wc -l | tr -d ' '
 }
 
 cmd_ensure() {
@@ -124,6 +128,7 @@ cmd_build() {
   cmd_ignore_scan "$root"
   local t0; t0="$(date +%s)"
   graphify update "$root" $force 2>&1 | grep -vE '▄|█|▀|^\s*$' | grep -E 'Rebuilt|warning|error|Error' | cut -c1-220
+  [ -f "$root/graphify-out/graph.json" ] && touch "$root/graphify-out/graph.json"  # unchanged graph is not rewritten
   say "time: $(( $(date +%s) - t0 )) s"
   cmd_status "$root"
 }
@@ -136,6 +141,7 @@ cmd_query() {
   if [ "$newer" -gt 0 ]; then
     say "[token: map was stale ($newer files changed) → updating before the query]"
     graphify update "$root" >/dev/null 2>&1 || die "update failed; run 'token.sh build $root'"
+    touch "$root/graphify-out/graph.json"  # graphify skips the write when the graph is unchanged
   fi
   local out; out="$(cd "$root" && graphify query "$q" 2>&1)"
   printf '%s\n' "$out"
