@@ -84,6 +84,7 @@ bash $T install-project [path] [--strict]
 ## Limits
 
 - **Code only.** Docs, PDFs and images need an LLM to map; this skill doesn't run one.
+- **Call edges depend on the language.** Tested with graphify 0.9.87: Python and JS/TS get full call edges. Kotlin gets calls inside the same class but misses calls into other objects (e.g. `queue.advance()`). **Dart (Flutter) gets definitions and imports only, no call edges at all**, so "what happens when X runs" questions don't benefit there. The map still tells Claude which file a class or function lives in.
 - Some files yield no symbols (plain PHP scripts, config files like `vite.config.ts`). graphify warns about them, and they still need a raw read.
 - **The map goes stale** when code changes. `token.sh query` checks this before every query and updates the map first if any code file is newer (seconds on small projects). Tested: rename a function and move its caller to a new file without rebuilding. Before the fix, `graphify query` answered confidently with the old name and old file:line. With the check, the answer comes back with the new name and correct locations. Calling `graphify query` directly skips this check.
 - Windows needs Git Bash or WSL; native PowerShell isn't supported.
